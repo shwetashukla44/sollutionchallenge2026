@@ -1,0 +1,182 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System users with specific roles.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "dispatcher", "finance", "viewer", "customer"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Shipment": {
+      "title": "Shipment",
+      "description": "Represents a load or order to be transported.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "status": { "type": "string", "enum": ["unassigned", "assigned", "loading", "in_transit", "delivered", "cancelled"] },
+        "priority": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "pickupLocation": { "type": "string" },
+        "deliveryLocation": { "type": "string" },
+        "pickupTime": { "type": "string", "format": "date-time" },
+        "deliveryTime": { "type": "string", "format": "date-time" },
+        "actualPickupTime": { "type": "string", "format": "date-time" },
+        "actualDeliveryTime": { "type": "string", "format": "date-time" },
+        "driverId": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "estimatedEta": { "type": "string", "format": "date-time" },
+        "currentLat": { "type": "number" },
+        "currentLng": { "type": "number" },
+        "documents": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "notes": { "type": "string" },
+        "revenue": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "customerName", "status", "pickupLocation", "deliveryLocation"]
+    },
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "Fleet assets.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "model": { "type": "string" },
+        "mileage": { "type": "number" },
+        "status": { "type": "string", "enum": ["available", "in_use", "maintenance"] },
+        "healthScore": { "type": "number" },
+        "sensorData": {
+          "type": "object",
+          "properties": {
+            "engineTemp": { "type": "number" },
+            "oilPressure": { "type": "number" },
+            "fuelEfficiency": { "type": "number" },
+            "vibrationLevel": { "type": "number" }
+          }
+        },
+        "lastMaintenance": { "type": "string", "format": "date-time" },
+        "nextMaintenance": { "type": "string", "format": "date-time" },
+        "assignedDriverId": { "type": "string" }
+      },
+      "required": ["id", "model", "status"]
+    },
+    "Driver": {
+      "title": "Driver",
+      "description": "Vehicle operators.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "status": { "type": "string", "enum": ["active", "off_duty", "on_leave"] },
+        "hosRemaining": { "type": "number" },
+        "safetyScore": { "type": "number" },
+        "currentShipmentId": { "type": "string" },
+        "licenseDocument": { "type": "string" }
+      },
+      "required": ["id", "name", "status"]
+    },
+    "Warehouse": {
+      "title": "Warehouse",
+      "description": "Logistics hubs.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "location": { "type": "string" },
+        "capacity": { "type": "number" },
+        "utilization": { "type": "number" },
+        "dockStatus": { "type": "string" }
+      },
+      "required": ["id", "name", "location"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Financial records for shipments.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "shipmentId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "paid", "overdue", "disputed"] },
+        "dueDate": { "type": "string", "format": "date" },
+        "paidDate": { "type": "string", "format": "date" }
+      },
+      "required": ["id", "shipmentId", "amount", "status"]
+    },
+    "Alert": {
+      "title": "Alert",
+      "description": "Operational exceptions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["delay", "maintenance", "hos_risk", "safety"] },
+        "severity": { "type": "string", "enum": ["info", "warning", "critical"] },
+        "message": { "type": "string" },
+        "shipmentId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "resolved": { "type": "boolean" }
+      },
+      "required": ["id", "type", "severity", "message"]
+    },
+    "AIInsight": {
+      "title": "AI Insight",
+      "description": "Suggestions from the AI assistant.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "insight": { "type": "string" },
+        "confidence": { "type": "number" },
+        "potentialSavings": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "insight"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles and roles."
+    },
+    "/shipments/{shipmentId}": {
+      "schema": "Shipment",
+      "description": "All transport loads."
+    },
+    "/vehicles/{vehicleId}": {
+      "schema": "Vehicle",
+      "description": "Fleet assets."
+    },
+    "/drivers/{driverId}": {
+      "schema": "Driver",
+      "description": "Driver compliance and status."
+    },
+    "/warehouses/{warehouseId}": {
+      "schema": "Warehouse",
+      "description": "Logistics hub data."
+    },
+    "/invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Billing records."
+    },
+    "/alerts/{alertId}": {
+      "schema": "Alert",
+      "description": "Operational alerts."
+    },
+    "/ai_insights/{insightId}": {
+      "schema": "AIInsight",
+      "description": "AI-generated operational suggestions."
+    }
+  }
+}

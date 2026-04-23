@@ -1,0 +1,13 @@
+{
+  "name": "LogiFlow AI",
+  "description": "An AI-powered logistics and fleet management platform featuring real-time tracking, route optimization, automated dispatching, and predictive analytics.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "AI-powered route optimization",
+    "Real-time fleet tracking",
+    "Automated dispatching",
+    "Fleet maintenance & compliance"
+  ]
+}

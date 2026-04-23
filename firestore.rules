@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Global Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { 
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == 'kamnashukla7080@gmail.com'
+      );
+    }
+    function isDispatcher() { return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'dispatcher']; }
+    function isFinance() { return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'finance']; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // --- Validation Blueprints ---
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string && data.uid.size() <= 128 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.role in ['admin', 'dispatcher', 'finance', 'viewer'];
+    }
+
+    function isValidShipment(data) {
+      return data.keys().hasAll(['id', 'customerName', 'status', 'pickupLocation', 'deliveryLocation']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.customerName is string && data.customerName.size() <= 256 &&
+             data.status in ['unassigned', 'assigned', 'loading', 'in_transit', 'delivered', 'cancelled'] &&
+             (!('priority' in data) || data.priority in ['low', 'medium', 'high', 'critical']) &&
+             data.pickupLocation is string && data.pickupLocation.size() <= 512 &&
+             data.deliveryLocation is string && data.deliveryLocation.size() <= 512;
+    }
+
+    // --- Collection Rules ---
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if isSignedIn() && (request.auth.uid == uid) && isValidUser(incoming());
+      allow update: if isSignedIn() && (request.auth.uid == uid || isAdmin()) && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'profileImage']) && 
+                    isValidUser(incoming());
+    }
+
+    match /shipments/{shipmentId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isDispatcher();
+    }
+
+    match /vehicles/{vehicleId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isDispatcher();
+    }
+
+    match /drivers/{driverId} {
+      allow read: if isSignedIn();
+      allow write: if isDispatcher();
+    }
+
+    match /warehouses/{warehouseId} {
+      allow read: if isSignedIn();
+      allow write: if isDispatcher();
+    }
+
+    match /invoices/{invoiceId} {
+      allow list: if isAdmin() || isFinance() || isDispatcher();
+      allow get: if isAdmin() || isFinance() || isDispatcher();
+      allow create: if (isAdmin() || isFinance()) && isValidId(invoiceId);
+      allow update: if (isAdmin() || isFinance()) && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+    }
+
+    match /alerts/{alertId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn(); // Potential for automated systems, but strictly validated
+      allow update: if isDispatcher() && incoming().diff(existing()).affectedKeys().hasOnly(['resolved']);
+    }
+
+    match /ai_insights/{insightId} {
+      allow read: if isSignedIn();
+      allow write: if false; // System-only generated
+    }
+    
+    // Explicit Admin matching if collections exist for them
+    match /admins/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}
