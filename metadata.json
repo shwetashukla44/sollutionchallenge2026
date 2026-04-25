@@ -4,10 +4,5 @@
   "requestFramePermissions": [
     "geolocation"
   ],
-  "majorCapabilities": [
-    "AI-powered route optimization",
-    "Real-time fleet tracking",
-    "Automated dispatching",
-    "Fleet maintenance & compliance"
-  ]
+  "majorCapabilities": []
 }
